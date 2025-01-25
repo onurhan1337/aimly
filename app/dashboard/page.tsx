@@ -1,8 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { GoalItem } from "@/components/goal-item";
 import { Progress } from "@/components/progress";
+import { GoalsList } from "@/components/goals-list";
+import { MotivationalMessage } from "@/components/motivational-message";
+import { GoalSuggestions } from "@/components/goal-suggestions";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -25,9 +26,9 @@ export default async function DashboardPage() {
 
   // Get this week's goals
   const startOfWeek = new Date();
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Start from Sunday
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
   const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(endOfWeek.getDate() + 6); // End on Saturday
+  endOfWeek.setDate(endOfWeek.getDate() + 6);
 
   const { data: weeklyGoals } = await supabase
     .from("goals")
@@ -82,39 +83,19 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-8">
         <div className="grid gap-8 md:grid-cols-2">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold">Today's Goals</h1>
-            </div>
-            {todayGoals?.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-8 text-center">
-                  <p className="text-lg font-medium">No goals for today</p>
-                  <p className="text-sm text-muted-foreground">
-                    Click the "New Goal" button to create one
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {todayGoals?.map((goal) => (
-                  <GoalItem
-                    key={goal.id}
-                    id={goal.id}
-                    title={goal.title}
-                    description={goal.description}
-                    completed={goal.completed}
-                  />
-                ))}
-              </div>
-            )}
+            <MotivationalMessage />
+            <GoalsList goals={todayGoals || []} />
           </div>
-          <Progress
-            todayTotal={todayTotal}
-            todayCompleted={todayCompleted}
-            weeklyTotal={weeklyTotal}
-            weeklyCompleted={weeklyCompleted}
-            streak={streak}
-          />
+          <div className="flex flex-col gap-4">
+            <GoalSuggestions />
+            <Progress
+              todayTotal={todayTotal}
+              todayCompleted={todayCompleted}
+              weeklyTotal={weeklyTotal}
+              weeklyCompleted={weeklyCompleted}
+              streak={streak}
+            />
+          </div>
         </div>
       </div>
     </div>

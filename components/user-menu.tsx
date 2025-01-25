@@ -10,46 +10,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { createClient } from "@/utils/supabase/client";
-import { useEffect, useState } from "react";
-import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { useAuthStore } from "@/lib/store/auth-store";
 
 export function UserMenu() {
-  const [user, setUser] = useState<User | null>(null);
-  const [mounted, setMounted] = useState<boolean>(false);
-  const supabase = createClient();
   const { theme, setTheme } = useTheme();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-    };
-
-    getUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+  const { user, signOut, isLoading } = useAuthStore();
 
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
   };
 
-  if (!mounted) {
+  if (isLoading) {
     return null;
   }
 
@@ -105,11 +78,7 @@ export function UserMenu() {
           <span>Change Password</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={async () => {
-            await supabase.auth.signOut();
-          }}
-        >
+        <DropdownMenuItem onClick={signOut}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

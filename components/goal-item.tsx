@@ -1,11 +1,7 @@
 "use client";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  editGoalAction,
-  removeGoalAction,
-  toggleGoalAction,
-} from "@/app/actions";
+import { editGoalAction, removeGoalAction } from "@/app/actions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +15,7 @@ import { toast } from "sonner";
 import { useTransition } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
+import { useGoals } from "@/lib/hooks/use-goals";
 
 interface GoalItemProps {
   id: string;
@@ -30,6 +27,7 @@ interface GoalItemProps {
 export function GoalItem({ id, title, description, completed }: GoalItemProps) {
   const [isPending, startTransition] = useTransition();
   const supabase = createClient();
+  const { mutateTodayGoals, mutateWeeklyGoals } = useGoals();
 
   const handleEdit = async (
     goalId: string,
@@ -44,6 +42,7 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
     startTransition(async () => {
       try {
         await editGoalAction(formData);
+        await Promise.all([mutateTodayGoals(), mutateWeeklyGoals()]);
       } catch (error) {
         throw error;
       }
@@ -57,6 +56,7 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
     startTransition(async () => {
       try {
         await removeGoalAction(formData);
+        await Promise.all([mutateTodayGoals(), mutateWeeklyGoals()]);
         toast.success("Goal removed successfully");
       } catch (error) {
         toast.error("Failed to remove goal");
@@ -65,15 +65,25 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
   };
 
   const toggleComplete = async () => {
-    await supabase.from("goals").update({ completed: !completed }).eq("id", id);
+    if (completed) return;
+
+    try {
+      await supabase.from("goals").update({ completed: true }).eq("id", id);
+      await Promise.all([mutateTodayGoals(), mutateWeeklyGoals()]);
+      toast.success("Goal completed! 🎉");
+    } catch (error) {
+      toast.error("Failed to update goal status");
+    }
   };
 
   return (
     <div className="flex items-center gap-2 rounded-lg border p-4">
-      <form action={toggleGoalAction}>
-        <input type="hidden" name="goalId" value={id} />
-        <Checkbox checked={completed} onCheckedChange={toggleComplete} />
-      </form>
+      <Checkbox
+        checked={completed}
+        onCheckedChange={toggleComplete}
+        className={cn("cursor-pointer", completed && "cursor-not-allowed")}
+        disabled={completed}
+      />
       <div className="flex-1">
         <h3
           className={cn("font-medium", completed && "line-through opacity-50")}
@@ -98,18 +108,20 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <EditGoalDialog
-            id={id}
-            title={title}
-            description={description}
-            onEdit={handleEdit}
-            trigger={
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-            }
-          />
+          {!completed && (
+            <EditGoalDialog
+              id={id}
+              title={title}
+              description={description}
+              onEdit={handleEdit}
+              trigger={
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+              }
+            />
+          )}
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"
             onSelect={handleRemove}

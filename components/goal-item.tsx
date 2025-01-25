@@ -27,7 +27,7 @@ interface GoalItemProps {
 export function GoalItem({ id, title, description, completed }: GoalItemProps) {
   const [isPending, startTransition] = useTransition();
   const supabase = createClient();
-  const { mutateTodayGoals, mutateWeeklyGoals } = useGoals();
+  const { mutateGoals } = useGoals();
 
   const handleEdit = async (
     goalId: string,
@@ -42,7 +42,7 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
     startTransition(async () => {
       try {
         await editGoalAction(formData);
-        await Promise.all([mutateTodayGoals(), mutateWeeklyGoals()]);
+        await Promise.all([mutateGoals()]);
       } catch (error) {
         throw error;
       }
@@ -56,7 +56,7 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
     startTransition(async () => {
       try {
         await removeGoalAction(formData);
-        await Promise.all([mutateTodayGoals(), mutateWeeklyGoals()]);
+        await Promise.all([mutateGoals()]);
         toast.success("Goal removed successfully");
       } catch (error) {
         toast.error("Failed to remove goal");
@@ -69,7 +69,7 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
 
     try {
       await supabase.from("goals").update({ completed: true }).eq("id", id);
-      await Promise.all([mutateTodayGoals(), mutateWeeklyGoals()]);
+      await Promise.all([mutateGoals()]);
       toast.success("Goal completed! 🎉");
     } catch (error) {
       toast.error("Failed to update goal status");

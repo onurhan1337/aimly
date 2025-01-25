@@ -23,85 +23,46 @@ async function fetchGoals(date: string) {
   return goals || [];
 }
 
-async function fetchWeeklyGoals(startDate: string, endDate: string) {
-  const { data: goals } = await supabase
-    .from("goals")
-    .select("*")
-    .gte("target_date", startDate)
-    .lte("target_date", endDate);
-
-  return goals || [];
-}
-
-export function useGoals() {
-  const today = new Date().toISOString().split("T")[0];
-
-  const startOfWeek = new Date();
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(endOfWeek.getDate() + 6);
-
-  const { data: todayGoals, mutate: mutateTodayGoals } = useSWR(
-    ["goals", today],
-    () => fetchGoals(today)
-  );
-
-  const { data: weeklyGoals, mutate: mutateWeeklyGoals } = useSWR(
-    [
-      "weeklyGoals",
-      startOfWeek.toISOString().split("T")[0],
-      endOfWeek.toISOString().split("T")[0],
-    ],
-    () =>
-      fetchWeeklyGoals(
-        startOfWeek.toISOString().split("T")[0],
-        endOfWeek.toISOString().split("T")[0]
-      )
-  );
-
-  const todayTotal = todayGoals?.length || 0;
-  const todayCompleted =
-    todayGoals?.filter((goal) => goal.completed).length || 0;
-  const weeklyTotal = weeklyGoals?.length || 0;
-  const weeklyCompleted =
-    weeklyGoals?.filter((goal) => goal.completed).length || 0;
-
-  // Calculate streak
+async function fetchStreak(today: string) {
   let streak = 0;
-  if (weeklyGoals) {
-    const groupedByDate = weeklyGoals.reduce(
-      (acc, goal) => {
-        if (!acc[goal.target_date]) {
-          acc[goal.target_date] = [];
-        }
-        acc[goal.target_date].push(goal);
-        return acc;
-      },
-      {} as Record<string, Goal[]>
-    );
+  let currentDate = new Date(today);
 
-    let currentDate = new Date(today);
-    while (true) {
-      const dateStr = currentDate.toISOString().split("T")[0];
-      const dayGoals = groupedByDate[dateStr];
+  while (true) {
+    const dateStr = currentDate.toISOString().split("T")[0];
+    const { data: dayGoals } = await supabase
+      .from("goals")
+      .select("*")
+      .eq("target_date", dateStr);
 
-      if (!dayGoals || dayGoals.length === 0) break;
-      if (!dayGoals.every((goal: Goal) => goal.completed)) break;
+    if (!dayGoals || dayGoals.length === 0) break;
+    if (!dayGoals.every((goal) => goal.completed)) break;
 
-      streak++;
-      currentDate.setDate(currentDate.getDate() - 1);
-    }
+    streak++;
+    currentDate.setDate(currentDate.getDate() - 1);
   }
 
+  return streak;
+}
+
+export function useGoals(date?: string) {
+  const today = new Date().toISOString().split("T")[0];
+  const targetDate = date || today;
+
+  const { data: goals, mutate: mutateGoals } = useSWR(
+    ["goals", targetDate],
+    () => fetchGoals(targetDate)
+  );
+
+  const { data: streak } = useSWR(["streak", today], () => fetchStreak(today));
+
+  const total = goals?.length || 0;
+  const completed = goals?.filter((goal) => goal.completed).length || 0;
+
   return {
-    todayGoals,
-    weeklyGoals,
-    todayTotal,
-    todayCompleted,
-    weeklyTotal,
-    weeklyCompleted,
-    streak,
-    mutateTodayGoals,
-    mutateWeeklyGoals,
+    goals,
+    total,
+    completed,
+    streak: streak || 0,
+    mutateGoals,
   };
 }

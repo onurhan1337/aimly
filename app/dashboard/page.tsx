@@ -10,13 +10,22 @@ import { useEffect } from "react";
 import { useGoals } from "@/lib/hooks/use-goals";
 
 export default function DashboardPage() {
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+
   const {
-    todayGoals,
-    todayTotal,
-    todayCompleted,
-    weeklyTotal,
-    weeklyCompleted,
+    goals: todayGoals,
+    total: todayTotal,
+    completed: todayCompleted,
     streak,
+  } = useGoals();
+  const {
+    goals: weeklyGoals,
+    total: weeklyTotal,
+    completed: weeklyCompleted,
   } = useGoals();
 
   useEffect(() => {
@@ -38,7 +47,7 @@ export default function DashboardPage() {
         <div className="grid gap-8 md:grid-cols-2">
           <div className="flex flex-col gap-4">
             <MotivationalMessage />
-            <GoalsList goals={todayGoals || []} />
+            <GoalsList />
           </div>
           <div className="flex flex-col gap-4">
             <GoalSuggestions />

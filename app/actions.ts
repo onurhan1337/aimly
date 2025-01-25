@@ -132,3 +132,90 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
+
+export async function createGoalAction(formData: FormData) {
+  const supabase = await createClient();
+  const title = formData.get("title")?.toString();
+  const description = formData.get("description")?.toString();
+
+  if (!title) {
+    return encodedRedirect("error", "/dashboard", "Title is required");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return encodedRedirect("error", "/sign-in", "You must be signed in");
+  }
+
+  const { error } = await supabase.from("goals").insert({
+    title,
+    description,
+    user_id: user.id,
+  });
+
+  if (error) {
+    console.error(error);
+    return encodedRedirect("error", "/dashboard", "Failed to create goal");
+  }
+
+  return encodedRedirect("success", "/dashboard", "Goal created successfully");
+}
+
+export async function toggleGoalAction(formData: FormData) {
+  const supabase = await createClient();
+  const completed = formData.get("completed") === "on";
+  const goalId = formData.get("goalId")?.toString();
+
+  if (!goalId) {
+    return encodedRedirect("error", "/dashboard", "Goal ID is required");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return encodedRedirect("error", "/sign-in", "You must be signed in");
+  }
+
+  const { error } = await supabase
+    .from("goals")
+    .update({ completed })
+    .eq("id", goalId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error(error);
+    return encodedRedirect("error", "/dashboard", "Failed to update goal");
+  }
+}
+
+export async function editGoalAction(formData: FormData) {
+  const supabase = await createClient();
+  const goalId = formData.get("goalId") as string;
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+
+  const { error } = await supabase
+    .from("goals")
+    .update({ title, description })
+    .eq("id", goalId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function removeGoalAction(formData: FormData) {
+  const supabase = await createClient();
+  const goalId = formData.get("goalId") as string;
+
+  const { error } = await supabase.from("goals").delete().eq("id", goalId);
+
+  if (error) {
+    throw error;
+  }
+}

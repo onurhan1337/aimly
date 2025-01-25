@@ -1,6 +1,6 @@
-import { Goal, Target } from "lucide-react";
-import { Button } from "./ui/button";
+import { Goal } from "lucide-react";
 import { UserMenu } from "./user-menu";
+import { NewGoalDialog } from "./new-goal-dialog";
 
 export function Header() {
   return (
@@ -11,10 +11,7 @@ export function Header() {
           <span className="font-semibold">Aimly</span>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-4 md:justify-end">
-          <Button variant="secondary" size="sm" className="ml-auto flex gap-2">
-            <Target className="h-4 w-4" />
-            New Goal
-          </Button>
+          <NewGoalDialog />
           <UserMenu />
         </div>
       </div>

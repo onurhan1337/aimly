@@ -16,18 +16,22 @@ import {
   navigateToWeek,
   isCurrentWeek,
   formatDateRange,
+  normalizeDate,
+  formatDateToYYYYMMDD,
 } from "@/lib/utils/date";
 
 export function WeeklyProgress() {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    normalizeDate(new Date())
+  );
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
-    startOfWeek(new Date(), { weekStartsOn: 1 })
+    normalizeDate(startOfWeek(new Date(), { weekStartsOn: 1 }))
   );
 
   const weekDates = getWeekDates(currentWeekStart);
 
   const weeklyData = weekDates.map((date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = formatDateToYYYYMMDD(date);
     const { goals } = useGoals(dateStr);
     return {
       date,
@@ -92,22 +96,22 @@ export function WeeklyProgress() {
       <CardContent className="p-4">
         <div className="flex items-stretch -mx-2">
           {weeklyData.map((day, index) => (
-            <Fragment key={day.date.toISOString()}>
+            <Fragment key={formatDateToYYYYMMDD(day.date)}>
               <DayProgress
                 date={day.date}
                 total={day.total}
                 completed={day.completed}
                 goals={day.goals}
                 isSelected={
-                  day.date.toISOString().split("T")[0] ===
-                  selectedDate.toISOString().split("T")[0]
+                  formatDateToYYYYMMDD(day.date) ===
+                  formatDateToYYYYMMDD(selectedDate)
                 }
                 onClick={() => setSelectedDate(day.date)}
                 isCurrentWeek={isCurrentWeek(currentWeekStart)}
               />
               {index < weeklyData.length - 1 && (
                 <DaySeparator
-                  key={`separator-${day.date.toISOString()}`}
+                  key={`separator-${formatDateToYYYYMMDD(day.date)}`}
                   total={day.total}
                   completed={day.completed}
                 />

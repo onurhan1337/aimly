@@ -509,3 +509,149 @@ export async function getFavoriteSuggestionsAction() {
 
   return data;
 }
+
+export async function refreshSuggestionsAction() {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    // Get favorite suggestions first
+    const { data: favoriteSuggestions } = await supabase
+      .from("suggestions")
+      .select("*, favorite_suggestions!inner(*)")
+      .eq("favorite_suggestions.user_id", user.id);
+
+    // Delete non-favorite suggestions
+    const favoriteIds = (favoriteSuggestions || []).map((s) => s.id);
+    const { error: deleteError } = await supabase
+      .from("suggestions")
+      .delete()
+      .eq("user_id", user.id)
+      .not("id", "in", favoriteIds.length > 0 ? favoriteIds : [null]);
+
+    if (deleteError) {
+      console.error("Failed to delete old suggestions:", deleteError);
+      throw new Error("Failed to delete old suggestions");
+    }
+
+    // Get active goals for analysis
+    const { data: activeGoals } = await supabase
+      .from("goals")
+      .select("title, description")
+      .eq("user_id", user.id)
+      .eq("completed", false)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const goalsForAnalysis = activeGoals?.length
+      ? activeGoals
+      : [
+          {
+            title: "Read a book",
+            description: "Read for personal development",
+          },
+          {
+            title: "Exercise",
+            description: "30 minutes of physical activity",
+          },
+          {
+            title: "Learn coding",
+            description: "Practice programming skills",
+          },
+        ];
+
+    const prompt = `As an AI goal suggestion assistant, analyze these active goals and suggest 4 new achievable daily goals that complement them. Active goals: ${JSON.stringify(goalsForAnalysis)}
+
+Focus on:
+1. Complementary goals that support active goals
+2. Gradually increasing difficulty
+3. Mix of different goal types (health, productivity, personal growth)
+4. Specific, measurable goals
+
+Return your response in this exact JSON format:
+{
+  "suggestions": [
+    {
+      "title": "string",
+      "description": "string"
+    }
+  ]
+}`;
+
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "mixtral-8x7b-32768",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a helpful AI assistant that suggests personalized daily goals based on user's active goals. Always respond in valid JSON format with exactly 4 suggestions.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.7,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to generate suggestions");
+    }
+
+    const data = await response.json();
+    let newSuggestions;
+
+    try {
+      const parsedContent = JSON.parse(data.choices[0].message.content);
+      if (
+        parsedContent.suggestions &&
+        Array.isArray(parsedContent.suggestions)
+      ) {
+        // Insert new suggestions
+        const { error: insertError } = await supabase
+          .from("suggestions")
+          .insert(
+            parsedContent.suggestions.map((s: any) => ({
+              title: s.title,
+              description: s.description,
+              user_id: user.id,
+            }))
+          );
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        // Get all suggestions (including favorites)
+        const { data: allSuggestions } = await supabase
+          .from("suggestions")
+          .select("*")
+          .eq("user_id", user.id);
+
+        return { suggestions: allSuggestions || [] };
+      }
+    } catch (error) {
+      throw new Error("Failed to refresh suggestions");
+    }
+  } catch (error) {
+    console.error("Refresh Suggestions Error:", error);
+    throw error;
+  }
+}

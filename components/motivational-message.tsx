@@ -27,7 +27,7 @@ export function MotivationalMessage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 shrink-0"
+            className="h-8 w-8 shrink-0 dark:bg-white"
             onClick={handleShare}
           >
             <XIcon className="h-4 w-4" />

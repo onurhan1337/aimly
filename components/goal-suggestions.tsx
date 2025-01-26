@@ -6,6 +6,7 @@ import {
   getSuggestionsAction,
   toggleFavoriteSuggestionAction,
   getFavoriteSuggestionsAction,
+  refreshSuggestionsAction,
 } from "@/app/actions";
 import { toast } from "sonner";
 import useSWR, { mutate as globalMutate } from "swr";
@@ -28,6 +29,8 @@ export function GoalSuggestions() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      revalidateOnMount: true,
+      dedupingInterval: 0,
     }
   );
 
@@ -67,7 +70,11 @@ export function GoalSuggestions() {
 
   const refreshSuggestions = async () => {
     try {
-      await mutate();
+      await refreshSuggestionsAction();
+      await Promise.all([
+        mutate(undefined, { revalidate: true }),
+        mutateFavorites(),
+      ]);
       toast.success("Suggestions refreshed");
     } catch (error) {
       toast.error("Failed to refresh suggestions");

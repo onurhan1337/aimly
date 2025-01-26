@@ -109,16 +109,6 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
         )}
       </div>
       <div className="flex items-center gap-2">
-        {completed && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handleShare}
-          >
-            <Share2 className="h-4 w-4" />
-          </Button>
-        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

@@ -252,6 +252,17 @@ export async function getSuggestionsAction() {
       throw new Error("Unauthorized");
     }
 
+    const { data: existingSuggestions } = await supabase
+      .from("suggestions")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(4);
+
+    if (existingSuggestions && existingSuggestions.length === 4) {
+      return { suggestions: existingSuggestions };
+    }
+
     const { data: pastGoals } = await supabase
       .from("goals")
       .select("title, description, completed")
@@ -343,6 +354,24 @@ Return your response in this exact JSON format:
         Array.isArray(parsedContent.suggestions)
       ) {
         suggestions = parsedContent;
+
+        // Delete existing suggestions
+        await supabase.from("suggestions").delete().eq("user_id", user.id);
+
+        // Store new suggestions
+        const { error: insertError } = await supabase
+          .from("suggestions")
+          .insert(
+            parsedContent.suggestions.map((s: any) => ({
+              title: s.title,
+              description: s.description,
+              user_id: user.id,
+            }))
+          );
+
+        if (insertError) {
+          console.error("Failed to store suggestions:", insertError);
+        }
       } else {
         throw new Error("Invalid response format from AI");
       }
@@ -372,6 +401,17 @@ Return your response in this exact JSON format:
           },
         ],
       };
+
+      // Store fallback suggestions
+      await supabase.from("suggestions").delete().eq("user_id", user.id);
+
+      await supabase.from("suggestions").insert(
+        suggestions.suggestions.map((s) => ({
+          title: s.title,
+          description: s.description,
+          user_id: user.id,
+        }))
+      );
     }
 
     return suggestions;
@@ -408,4 +448,64 @@ export async function addSuggestionAsGoalAction(suggestion: {
     console.error(error);
     throw new Error("Failed to create goal");
   }
+}
+
+export async function toggleFavoriteSuggestionAction(suggestionId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("You must be signed in");
+  }
+
+  // Check if already favorited
+  const { data: existing } = await supabase
+    .from("favorite_suggestions")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("suggestion_id", suggestionId)
+    .single();
+
+  if (existing) {
+    // Remove from favorites
+    const { error } = await supabase
+      .from("favorite_suggestions")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("suggestion_id", suggestionId);
+
+    if (error) throw error;
+  } else {
+    // Add to favorites
+    const { error } = await supabase.from("favorite_suggestions").insert({
+      user_id: user.id,
+      suggestion_id: suggestionId,
+    });
+
+    if (error) throw error;
+  }
+}
+
+export async function getFavoriteSuggestionsAction() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("You must be signed in");
+  }
+
+  const { data, error } = await supabase
+    .from("suggestions")
+    .select("*, favorite_suggestions!inner(*)")
+    .eq("favorite_suggestions.user_id", user.id);
+
+  if (error) throw error;
+
+  return data;
 }

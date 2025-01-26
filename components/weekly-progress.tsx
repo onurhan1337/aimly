@@ -6,7 +6,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useGoals } from "@/lib/hooks/use-goals";
-import { startOfWeek } from "date-fns";
+import { startOfWeek, format } from "date-fns";
 import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DayProgress } from "./day-progress";
@@ -19,6 +19,15 @@ import {
   normalizeDate,
   formatDateToYYYYMMDD,
 } from "@/lib/utils/date";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export function WeeklyProgress() {
   const [selectedDate, setSelectedDate] = useState<Date>(
@@ -53,24 +62,28 @@ export function WeeklyProgress() {
     { total: 0, completed: 0 }
   );
 
+  const chartData = weeklyData.map((day) => ({
+    name: format(day.date, "EEE"),
+    total: day.total,
+    completed: day.completed,
+  }));
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" />
-              Weekly Progress
+            <CardTitle>
+              {weeklyTotals.total > 0 && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Trophy className="h-4 w-4" />
+                  <span>
+                    {weeklyTotals.completed}/{weeklyTotals.total} completed this
+                    week
+                  </span>
+                </div>
+              )}
             </CardTitle>
-            {weeklyTotals.total > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Trophy className="h-4 w-4" />
-                <span>
-                  {weeklyTotals.completed}/{weeklyTotals.total} completed this
-                  week
-                </span>
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <Button

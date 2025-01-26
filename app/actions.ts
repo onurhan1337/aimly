@@ -129,7 +129,12 @@ export const resetPasswordAction = async (formData: FormData) => {
 
 export const signOutAction = async () => {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    return encodedRedirect("error", "/dashboard", "Failed to sign out");
+  }
+
   return redirect("/sign-in");
 };
 
@@ -616,8 +621,6 @@ Return your response in this exact JSON format:
     }
 
     const data = await response.json();
-    let newSuggestions;
-
     try {
       const parsedContent = JSON.parse(data.choices[0].message.content);
       if (
@@ -652,6 +655,111 @@ Return your response in this exact JSON format:
     }
   } catch (error) {
     console.error("Refresh Suggestions Error:", error);
+    throw error;
+  }
+}
+
+export async function categorizeGoalsAction() {
+  const supabase = await createClient();
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const { data: goals } = await supabase
+      .from("goals")
+      .select("title, description")
+      .eq("user_id", user.id);
+
+    if (!goals || goals.length === 0) {
+      return {
+        categories: [
+          { name: "Health", value: 0 },
+          { name: "Career", value: 0 },
+          { name: "Personal", value: 0 },
+          { name: "Learning", value: 0 },
+          { name: "Social", value: 0 },
+        ],
+      };
+    }
+
+    const prompt = `As an AI goal categorization assistant, analyze these goals and categorize them into 5 main categories: Health, Career, Personal, Learning, and Social. Count how many goals fall into each category.
+
+Goals to analyze: ${JSON.stringify(goals)}
+
+Return your response in this exact JSON format:
+{
+  "categories": [
+    {
+      "name": "string",
+      "value": number
+    }
+  ]
+}
+
+Make sure all 5 categories are included in the response, even if they have 0 goals.`;
+
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "mixtral-8x7b-32768",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a helpful AI assistant that categorizes goals into predefined categories. Always respond in valid JSON format with exactly 5 categories.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.3,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to categorize goals");
+    }
+
+    const data = await response.json();
+    let categories;
+
+    try {
+      const parsedContent = JSON.parse(data.choices[0].message.content);
+      if (parsedContent.categories && Array.isArray(parsedContent.categories)) {
+        categories = parsedContent;
+      } else {
+        throw new Error("Invalid response format from AI");
+      }
+    } catch (error) {
+      console.error("JSON Parse Error:", error);
+      categories = {
+        categories: [
+          { name: "Health", value: 0 },
+          { name: "Career", value: 0 },
+          { name: "Personal", value: 0 },
+          { name: "Learning", value: 0 },
+          { name: "Social", value: 0 },
+        ],
+      };
+    }
+
+    return categories;
+  } catch (error) {
+    console.error("Categorize Goals Error:", error);
     throw error;
   }
 }

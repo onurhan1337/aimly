@@ -6,6 +6,7 @@ import { Progress } from "@/components/progress";
 import { GoalsList } from "@/components/goals-list";
 import { MotivationalMessage } from "@/components/motivational-message";
 import { GoalSuggestions } from "@/components/goal-suggestions";
+import { WeeklyProgress } from "@/components/weekly-progress";
 import { useEffect } from "react";
 import { useGoals } from "@/lib/hooks/use-goals";
 
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   return (
     <div className="container py-8">
       <div className="flex flex-col gap-8">
+        <WeeklyProgress />
         <div className="grid gap-8 md:grid-cols-2">
           <div className="flex flex-col gap-4">
             <MotivationalMessage />

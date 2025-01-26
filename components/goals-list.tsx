@@ -14,24 +14,10 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 export function GoalsList() {
   const [date, setDate] = useState<Date>(new Date());
   const { goals, mutateGoals } = useGoals(date.toISOString().split("T")[0]);
-  const [isCreatingTest, setIsCreatingTest] = useState(false);
-
-  const handleCreateTestGoals = async () => {
-    setIsCreatingTest(true);
-    try {
-      await mutateGoals();
-      toast.success("Test goals created successfully");
-    } catch (error) {
-      toast.error("Failed to create test goals");
-    } finally {
-      setIsCreatingTest(false);
-    }
-  };
 
   return (
     <Card>

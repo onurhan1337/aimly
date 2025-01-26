@@ -41,7 +41,6 @@ export function WeeklyProgress() {
     setCurrentWeekStart((prev) => navigateToWeek(prev, direction));
   };
 
-  // Calculate weekly totals
   const weeklyTotals = weeklyData.reduce(
     (acc, day) => ({
       total: acc.total + day.total,

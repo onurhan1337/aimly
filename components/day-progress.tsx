@@ -122,7 +122,7 @@ export function DayProgress({
           </div>
 
           {goals.length > 0 ? (
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[200px]">
               <div className="space-y-3 pr-4">
                 {groupedGoals.pending.length > 0 && (
                   <div className="space-y-1.5">

@@ -10,8 +10,9 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "Aimly",
+  description:
+    "Aimly is a modern web application that helps users set, track, and achieve their personal goals with AI-powered suggestions and progress tracking.",
 };
 
 const geistSans = Geist({

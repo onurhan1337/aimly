@@ -15,6 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { GoalCategoriesChart } from "@/components/goal-categories-chart";
 
 export function GoalsList() {
   const [date, setDate] = useState<Date>(new Date());

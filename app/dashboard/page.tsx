@@ -8,26 +8,21 @@ import { MotivationalMessage } from "@/components/motivational-message";
 import { GoalSuggestions } from "@/components/goal-suggestions";
 import { WeeklyProgress } from "@/components/weekly-progress";
 import { useEffect } from "react";
-import { useGoals } from "@/lib/hooks/use-goals";
+import { useGoals, useWeeklyGoals } from "@/lib/hooks/use-goals";
+import { GoalCategoriesChart } from "@/components/goal-categories-chart";
+import { format } from "date-fns";
 
 export default function DashboardPage() {
   const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
 
   const {
     goals: todayGoals,
     total: todayTotal,
     completed: todayCompleted,
     streak,
-  } = useGoals();
-  const {
-    goals: weeklyGoals,
-    total: weeklyTotal,
-    completed: weeklyCompleted,
-  } = useGoals();
+  } = useGoals(format(today, "yyyy-MM-dd"));
+
+  const { total: weeklyTotal, completed: weeklyCompleted } = useWeeklyGoals();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -50,6 +45,7 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-4">
             <MotivationalMessage />
             <GoalsList />
+            <GoalCategoriesChart />
           </div>
           <div className="flex flex-col gap-4">
             <GoalSuggestions />

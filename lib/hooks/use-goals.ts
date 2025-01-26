@@ -1,5 +1,7 @@
 import useSWR from "swr";
 import { createClient } from "@/utils/supabase/client";
+import { useEffect, useState } from "react";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 
 export interface Goal {
   id: string;
@@ -9,6 +11,7 @@ export interface Goal {
   user_id: string;
   target_date: string;
   created_at: string;
+  date: string;
 }
 
 const supabase = createClient();
@@ -64,5 +67,46 @@ export function useGoals(date?: string) {
     completed,
     streak: streak || 0,
     mutateGoals,
+  };
+}
+
+export function useWeeklyGoals() {
+  const [weeklyGoals, setWeeklyGoals] = useState<Goal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchWeeklyGoals = async () => {
+      const supabase = createClient();
+      const today = new Date();
+      const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+
+      const { data: goals, error } = await supabase
+        .from("goals")
+        .select("*")
+        .gte("target_date", format(weekStart, "yyyy-MM-dd"))
+        .lte("target_date", format(weekEnd, "yyyy-MM-dd"))
+        .order("target_date", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching weekly goals:", error);
+        return;
+      }
+
+      setWeeklyGoals(goals || []);
+      setIsLoading(false);
+    };
+
+    fetchWeeklyGoals();
+  }, []);
+
+  const total = weeklyGoals.length;
+  const completed = weeklyGoals.filter((goal) => goal.completed).length;
+
+  return {
+    goals: weeklyGoals,
+    total,
+    completed,
+    isLoading,
   };
 }

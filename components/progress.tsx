@@ -3,6 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Flame, Trophy, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGoals } from "@/lib/hooks/use-goals";
+import { startOfWeek, addDays } from "date-fns";
 
 interface ProgressProps {
   todayTotal: number;

@@ -6,6 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Goal {
   title: string;
@@ -105,7 +106,7 @@ export function DayProgress({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-3" align="center">
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b pb-2">
             <div>
               <div className="font-medium">{format(date, "EEEE")}</div>
               <div className="text-sm text-muted-foreground">
@@ -121,55 +122,60 @@ export function DayProgress({
           </div>
 
           {goals.length > 0 ? (
-            <div className="space-y-3">
-              {groupedGoals.pending.length > 0 && (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>Pending</span>
-                  </div>
-                  {groupedGoals.pending.map((goal, idx) => (
-                    <div key={idx} className="text-sm p-2 rounded-lg bg-muted">
-                      <div className="flex items-start justify-between gap-2">
-                        <span>{goal.title}</span>
-                      </div>
-                      {goal.description && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {goal.description}
-                        </p>
-                      )}
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-3 pr-4">
+                {groupedGoals.pending.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground sticky top-0 bg-background py-1">
+                      <Clock className="h-3 w-3" />
+                      <span>Pending</span>
                     </div>
-                  ))}
-                </div>
-              )}
+                    {groupedGoals.pending.map((goal, idx) => (
+                      <div
+                        key={idx}
+                        className="text-sm p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-medium">{goal.title}</span>
+                        </div>
+                        {goal.description && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {goal.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              {groupedGoals.completed.length > 0 && (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3" />
-                    <span>Completed</span>
-                  </div>
-                  {groupedGoals.completed.map((goal, idx) => (
-                    <div
-                      key={idx}
-                      className="text-sm p-2 rounded-lg bg-primary/5"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="line-through opacity-70">
-                          {goal.title}
-                        </span>
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                      </div>
-                      {goal.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-through opacity-70">
-                          {goal.description}
-                        </p>
-                      )}
+                {groupedGoals.completed.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground sticky top-0 bg-background py-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span>Completed</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    {groupedGoals.completed.map((goal, idx) => (
+                      <div
+                        key={idx}
+                        className="text-sm p-2.5 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="line-through opacity-70">
+                            {goal.title}
+                          </span>
+                          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                        </div>
+                        {goal.description && (
+                          <p className="text-xs text-muted-foreground mt-1 line-through opacity-70">
+                            {goal.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
           ) : (
             <div className="text-sm text-muted-foreground text-center py-6 space-y-2">
               <Target className="h-8 w-8 mx-auto opacity-50" />

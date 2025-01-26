@@ -9,13 +9,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { MoreHorizontal, Pencil, Share2, Trash } from "lucide-react";
 import { EditGoalDialog } from "./edit-goal-dialog";
 import { toast } from "sonner";
 import { useTransition } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { useGoals } from "@/lib/hooks/use-goals";
+import { getRandomPhrase, getShareUrl } from "@/lib/utils/motivational-phrases";
 
 interface GoalItemProps {
   id: string;
@@ -70,10 +71,16 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
     try {
       await supabase.from("goals").update({ completed: true }).eq("id", id);
       await Promise.all([mutateGoals()]);
-      toast.success("Goal completed! 🎉");
+      toast.success(getRandomPhrase("achievement"));
     } catch (error) {
       toast.error("Failed to update goal status");
     }
+  };
+
+  const handleShare = () => {
+    const phrase = getRandomPhrase("achievement");
+    const shareUrl = getShareUrl(phrase);
+    window.open(shareUrl, "_blank");
   };
 
   return (
@@ -88,7 +95,7 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
         <h3
           className={cn("font-medium", completed && "line-through opacity-50")}
         >
-          {title.length > 20 ? title.slice(0, 20) + "..." : title}
+          {title.length > 50 ? title.slice(0, 50) + "..." : title}
         </h3>
         {description && (
           <p
@@ -101,36 +108,52 @@ export function GoalItem({ id, title, description, completed }: GoalItemProps) {
           </p>
         )}
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {!completed && (
-            <EditGoalDialog
-              id={id}
-              title={title}
-              description={description}
-              onEdit={handleEdit}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-              }
-            />
-          )}
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onSelect={handleRemove}
+      <div className="flex items-center gap-2">
+        {completed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleShare}
           >
-            <Trash className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <Share2 className="h-4 w-4" />
+          </Button>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              disabled={isPending}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {!completed && (
+              <EditGoalDialog
+                id={id}
+                title={title}
+                description={description}
+                onEdit={handleEdit}
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                }
+              />
+            )}
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onSelect={handleRemove}
+            >
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }

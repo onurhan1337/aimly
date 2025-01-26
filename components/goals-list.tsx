@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GoalItem } from "@/components/goal-item";
-import { Flag, Calendar as CalendarIcon, Database } from "lucide-react";
+import { Flag, Calendar as CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useState } from "react";
 import { useGoals } from "@/lib/hooks/use-goals";
@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -62,17 +63,19 @@ export function GoalsList() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {goals.map((goal) => (
-              <GoalItem
-                key={goal.id}
-                id={goal.id}
-                title={goal.title}
-                description={goal.description || undefined}
-                completed={goal.completed}
-              />
-            ))}
-          </div>
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="grid gap-4">
+              {goals.map((goal) => (
+                <GoalItem
+                  key={goal.id}
+                  id={goal.id}
+                  title={goal.title}
+                  description={goal.description || undefined}
+                  completed={goal.completed}
+                />
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </CardContent>
     </Card>

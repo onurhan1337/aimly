@@ -40,7 +40,13 @@ export function GoalSuggestions() {
     try {
       await addSuggestionAsGoalAction(suggestion);
       const today = new Date().toISOString().split("T")[0];
-      await Promise.all([mutate(), globalMutate(["goals", today])]);
+      await Promise.all([
+        mutate(),
+        globalMutate(["goals", today]),
+        globalMutate("weekly-progress"),
+        globalMutate(["goals", "weekly"]),
+        globalMutate(["goals", "streak"]),
+      ]);
       toast.success("Goal added successfully");
     } catch (error) {
       const message =

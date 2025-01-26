@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Plus, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createGoalAction } from "@/app/actions";
+import { addSuggestionAsGoalAction, getSuggestionsAction } from "@/app/actions";
 import { toast } from "sonner";
+import useSWR, { mutate as globalMutate } from "swr";
 
 interface Suggestion {
   title: string;
@@ -12,63 +12,26 @@ interface Suggestion {
 
 interface SuggestionsResponse {
   suggestions: Suggestion[];
-  error?: string;
-  details?: string;
 }
 
 export function GoalSuggestions() {
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchSuggestions = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/suggestions", {
-        method: "POST",
-      });
-
-      const data: SuggestionsResponse = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.details || data.error || "Failed to fetch suggestions"
-        );
-      }
-
-      if (data.suggestions) {
-        setSuggestions(data.suggestions);
-      } else {
-        throw new Error("Invalid response format");
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to load suggestions";
-      console.error("Error fetching suggestions:", error);
-      setError(message);
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data, error, isLoading, mutate } = useSWR<SuggestionsResponse>(
+    "suggestions",
+    async () => getSuggestionsAction()
+  );
 
   const addGoal = async (suggestion: Suggestion) => {
-    const formData = new FormData();
-    formData.append("title", suggestion.title);
-    formData.append("description", suggestion.description);
-
     try {
-      await createGoalAction(formData);
+      await addSuggestionAsGoalAction(suggestion);
+      const today = new Date().toISOString().split("T")[0];
+      await Promise.all([mutate(), globalMutate(["goals", today])]);
       toast.success("Goal added successfully");
     } catch (error) {
-      toast.error("Failed to add goal");
+      const message =
+        error instanceof Error ? error.message : "Failed to add goal";
+      toast.error(message);
     }
   };
-
-  useEffect(() => {
-    fetchSuggestions();
-  }, []);
 
   return (
     <Card>
@@ -81,7 +44,7 @@ export function GoalSuggestions() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={fetchSuggestions}
+            onClick={() => mutate()}
             disabled={isLoading}
           >
             <RefreshCw
@@ -97,15 +60,17 @@ export function GoalSuggestions() {
         </p>
         {error ? (
           <div className="rounded-lg border border-destructive/50 p-4 text-sm text-destructive">
-            {error}
+            {error instanceof Error
+              ? error.message
+              : "Failed to load suggestions"}
           </div>
-        ) : suggestions.length === 0 && !isLoading ? (
+        ) : !data?.suggestions && !isLoading ? (
           <div className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
             No suggestions available. Try refreshing.
           </div>
         ) : (
           <div className="space-y-2">
-            {suggestions.map((suggestion, index) => (
+            {data?.suggestions.map((suggestion, index) => (
               <div
                 key={index}
                 className="flex items-start justify-between rounded-lg border p-3"

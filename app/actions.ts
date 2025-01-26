@@ -199,6 +199,17 @@ export async function editGoalAction(formData: FormData) {
   const title = formData.get("title") as string;
   const description = formData.get("description") as string;
 
+  // Check if the goal is completed
+  const { data: goal } = await supabase
+    .from("goals")
+    .select("completed")
+    .eq("id", goalId)
+    .single();
+
+  if (goal?.completed) {
+    throw new Error("Cannot edit completed goals");
+  }
+
   const { error } = await supabase
     .from("goals")
     .update({ title, description })
@@ -212,6 +223,17 @@ export async function editGoalAction(formData: FormData) {
 export async function removeGoalAction(formData: FormData) {
   const supabase = await createClient();
   const goalId = formData.get("goalId") as string;
+
+  // Check if the goal is completed
+  const { data: goal } = await supabase
+    .from("goals")
+    .select("completed")
+    .eq("id", goalId)
+    .single();
+
+  if (goal?.completed) {
+    throw new Error("Cannot delete completed goals");
+  }
 
   const { error } = await supabase.from("goals").delete().eq("id", goalId);
 

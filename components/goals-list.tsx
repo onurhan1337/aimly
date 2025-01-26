@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GoalItem } from "@/components/goal-item";
-import { Flag, Calendar as CalendarIcon } from "lucide-react";
+import { Flag, Calendar as CalendarIcon, Database } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useState } from "react";
 import { useGoals } from "@/lib/hooks/use-goals";
@@ -14,10 +14,24 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function GoalsList() {
   const [date, setDate] = useState<Date>(new Date());
-  const { goals } = useGoals(date.toISOString().split("T")[0]);
+  const { goals, mutateGoals } = useGoals(date.toISOString().split("T")[0]);
+  const [isCreatingTest, setIsCreatingTest] = useState(false);
+
+  const handleCreateTestGoals = async () => {
+    setIsCreatingTest(true);
+    try {
+      await mutateGoals();
+      toast.success("Test goals created successfully");
+    } catch (error) {
+      toast.error("Failed to create test goals");
+    } finally {
+      setIsCreatingTest(false);
+    }
+  };
 
   return (
     <Card>
@@ -27,28 +41,30 @@ export function GoalsList() {
             <Flag className="h-5 w-5" />
             Goals
           </CardTitle>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-[240px] justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(date, "MMMM d, yyyy")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(newDate) => newDate && setDate(newDate)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-auto justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(date, "MMMM d, yyyy")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(newDate) => newDate && setDate(newDate)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
